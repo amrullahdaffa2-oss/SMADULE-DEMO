@@ -1,10 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useAppStore } from '@/lib/store'
-import { MOCK_MATERI } from '@/lib/mock-data'
+import { getMateri } from '@/lib/supabase-service'
 import { formatDate, getCountdown, formatCountdown, cn } from '@/lib/utils'
+
+type Materi = {
+  id: string; judul: string; deskripsi: string; konten: string
+  mapel: string; kelas: string; guru: string
+  scheduleDate: Date; endDate: Date
+  status: 'active' | 'scheduled' | 'closed' | 'draft'
+  files: string[]; createdAt: Date
+}
 import {
   BookOpen, Clock, Calendar, CheckCircle, FileText, Play, Lock,
   Search, Filter, Plus, Edit, Eye, Users, ChevronRight
@@ -19,10 +28,21 @@ const statusConfig = {
 
 export default function MateriPage() {
   const { role } = useAppStore()
-  const [search, setSearch] = useState('')
+  const searchParams = useSearchParams()
+  const initialSearch = searchParams.get('q') ?? ''
+  const [search, setSearch] = useState(initialSearch)
   const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [allMateri, setAllMateri] = useState<Materi[]>([])
 
-  const filteredMateri = MOCK_MATERI.filter(m => {
+  useEffect(() => {
+    setSearch(initialSearch)
+  }, [initialSearch])
+
+  useEffect(() => {
+    getMateri().then(setAllMateri).catch(console.error)
+  }, [])
+
+  const filteredMateri = allMateri.filter(m => {
     const matchSearch = m.judul.toLowerCase().includes(search.toLowerCase()) ||
       m.deskripsi.toLowerCase().includes(search.toLowerCase())
     const matchStatus = filterStatus === 'all' || m.status === filterStatus
@@ -86,10 +106,10 @@ export default function MateriPage() {
       {role === 'guru' && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: 'Total Materi', value: MOCK_MATERI.length, icon: BookOpen, color: 'bg-indigo-500' },
-            { label: 'Aktif', value: MOCK_MATERI.filter(m => m.status === 'active').length, icon: Play, color: 'bg-emerald-500' },
-            { label: 'Terjadwal', value: MOCK_MATERI.filter(m => m.status === 'scheduled').length, icon: Clock, color: 'bg-amber-500' },
-            { label: 'Draft', value: MOCK_MATERI.filter(m => m.status === 'draft').length, icon: FileText, color: 'bg-violet-500' },
+            { label: 'Total Materi', value: allMateri.length, icon: BookOpen, color: 'bg-indigo-500' },
+            { label: 'Aktif', value: allMateri.filter(m => m.status === 'active').length, icon: Play, color: 'bg-emerald-500' },
+            { label: 'Terjadwal', value: allMateri.filter(m => m.status === 'scheduled').length, icon: Clock, color: 'bg-amber-500' },
+            { label: 'Draft', value: allMateri.filter(m => m.status === 'draft').length, icon: FileText, color: 'bg-violet-500' },
           ].map((stat, i) => (
             <div key={i} className="bg-white rounded-xl p-4 border border-slate-200">
               <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center mb-3', stat.color)}>
@@ -172,7 +192,7 @@ export default function MateriPage() {
   )
 }
 
-function MateriCard({ materi, role }: { materi: typeof MOCK_MATERI[0], role: string }) {
+function MateriCard({ materi, role }: { materi: Materi, role: string }) {
   const status = statusConfig[materi.status as keyof typeof statusConfig]
   const StatusIcon = status.icon
   const countdown = materi.status === 'scheduled' ? getCountdown(materi.scheduleDate) : null

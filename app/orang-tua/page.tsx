@@ -1,7 +1,9 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { useAppStore } from '@/lib/store'
-import { MOCK_NILAI, MOCK_MATERI, MOCK_TUGAS, GRADE_DATA_MURID, ATTENDANCE_WEEKLY } from '@/lib/mock-data'
+import { getNilaiByMurid, getMateri, getTugas } from '@/lib/supabase-service'
+import { GRADE_DATA_MURID, ATTENDANCE_WEEKLY } from '@/lib/mock-data'
 import { formatDate, nilaiToHuruf, cn } from '@/lib/utils'
 import {
   BarChart2, TrendingUp, Award, Calendar, BookOpen, ClipboardList,
@@ -16,6 +18,24 @@ const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#6366F1']
 
 export default function OrangTuaPage() {
   const { role, absensi } = useAppStore()
+  const [childNilai, setChildNilai] = useState<{
+    id: string; muridId: string; materiId: string; tipe: string
+    nilaiAngka: number; nilaiHuruf: string; feedback: string; dinilaiPada: Date
+  }[]>([])
+  const [childTugas, setChildTugas] = useState<{
+    id: string; judul: string; sudahKumpul: boolean; deadline: Date
+  }[]>([])
+  const [allMateri, setAllMateri] = useState<{ id: string; judul: string; status: string }[]>([])
+  const [totalMateriAktif, setTotalMateriAktif] = useState(0)
+
+  useEffect(() => {
+    getNilaiByMurid('m1').then(setChildNilai).catch(console.error)
+    getTugas().then(setChildTugas).catch(console.error)
+    getMateri().then(list => {
+      setAllMateri(list)
+      setTotalMateriAktif(list.filter(m => m.status === 'active' || m.status === 'closed').length)
+    }).catch(console.error)
+  }, [])
 
   // If not orangtua, redirect or show message
   if (role !== 'orangtua') {
@@ -30,15 +50,13 @@ export default function OrangTuaPage() {
   }
 
   // Child data (Daffa Rizky - m1)
-  const childNilai = MOCK_NILAI.filter(n => n.muridId === 'm1')
   const childAbsensi = absensi.filter(a => a.muridId === 'm1')
-  const childTugas = MOCK_TUGAS
 
   // Calculate stats
   const avgNilai = childNilai.length > 0
     ? Math.round(childNilai.reduce((acc, n) => acc + n.nilaiAngka, 0) / childNilai.length)
     : 0
-  const totalMateri = MOCK_MATERI.filter(m => m.status === 'active' || m.status === 'closed').length
+  const totalMateri = totalMateriAktif
   const kehadiranPersen = totalMateri > 0 ? Math.round((childAbsensi.length / totalMateri) * 100) : 0
   const tugasBelumSelesai = childTugas.filter(t => !t.sudahKumpul && new Date(t.deadline) > new Date()).length
   const tugasTerlambat = childTugas.filter(t => !t.sudahKumpul && new Date(t.deadline) < new Date()).length
@@ -206,7 +224,7 @@ export default function OrangTuaPage() {
         </div>
         <div className="divide-y divide-slate-100">
           {childNilai.length > 0 ? childNilai.slice(0, 5).map((nilai) => {
-            const materi = MOCK_MATERI.find(m => m.id === nilai.materiId)
+            const materi = allMateri.find(m => m.id === nilai.materiId)
             return (
               <div key={nilai.id} className="px-5 py-4 flex items-center justify-between">
                 <div className="flex-1 min-w-0">

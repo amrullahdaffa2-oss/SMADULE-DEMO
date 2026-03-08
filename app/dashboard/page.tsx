@@ -5,29 +5,38 @@ import { BarChart, Bar, LineChart, Line, RadarChart, Radar, PolarGrid, PolarAngl
 import { BookOpen, Users, Briefcase, Activity, AlertCircle, CheckCircle2, Clock, TrendingUp } from 'lucide-react'
 import { StatCard } from '@/components/dashboard/StatCard'
 import { useAppStore } from '@/lib/store'
-import { MOCK_MATERI, MOCK_TUGAS, MOCK_ABSENSI, MOCK_NILAI, GRADE_DATA_MURID, ATTENDANCE_WEEKLY } from '@/lib/mock-data'
+import { getMateri, getTugas } from '@/lib/supabase-service'
+import { GRADE_DATA_MURID, ATTENDANCE_WEEKLY } from '@/lib/mock-data'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
+type Materi = { id: string; judul: string; mapel: string; status: string }
+type Tugas = { id: string; judul: string; deadline: Date; sudahKumpul: boolean }
+
 export default function DashboardPage() {
   const role = useAppStore(s => s.role)
+  const { absensi } = useAppStore()
   const [mounted, setMounted] = useState(false)
+  const [allMateri, setAllMateri] = useState<Materi[]>([])
+  const [allTugas, setAllTugas] = useState<Tugas[]>([])
 
   useEffect(() => {
     setMounted(true)
+    getMateri().then(setAllMateri).catch(console.error)
+    getTugas().then(setAllTugas).catch(console.error)
   }, [])
 
   if (!mounted) return null
 
   // Guru Dashboard
   if (role === 'guru') {
-    const activeMaterials = MOCK_MATERI.filter(m => m.status === 'active').length
+    const activeMaterials = allMateri.filter(m => m.status === 'active').length
     const totalStudents = 32
-    const activeTasks = MOCK_TUGAS.filter(t => !t.sudahKumpul).length
+    const activeTasks = allTugas.filter(t => !t.sudahKumpul).length
     const attendanceRate = 87
 
-    const materi = MOCK_MATERI.slice(0, 5)
-    const absensi = MOCK_ABSENSI.slice(0, 5)
+    const materi = allMateri.slice(0, 5)
+    const absensiList = absensi.slice(0, 5)
 
     return (
       <div className="space-y-6 animate-fadeIn">
@@ -110,7 +119,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {absensi.map((a) => (
+                {absensiList.map((a) => (
                   <tr key={a.id} className="hover:bg-slate-50">
                     <td className="px-6 py-3 text-slate-900 font-medium">{a.muridNama}</td>
                     <td className="px-6 py-3 text-slate-600">{a.materiJudul}</td>
@@ -224,7 +233,7 @@ export default function DashboardPage() {
   const totalPoints = 420
   const rank = '#3'
   const attendance = 95
-  const activeTasks = MOCK_TUGAS.filter(t => !t.sudahKumpul).length
+  const activeTasks = allTugas.filter(t => !t.sudahKumpul).length
   const preTestDone = true
 
   const gradeHistory = [
@@ -236,8 +245,8 @@ export default function DashboardPage() {
     { month: 'Jan', math: 89, physics: 89 },
   ]
 
-  const nearDeadlineTask = MOCK_TUGAS.filter(t => !t.sudahKumpul).slice(0, 3)
-  const activeMaterials = MOCK_MATERI.filter(m => m.status === 'active')
+  const nearDeadlineTask = allTugas.filter(t => !t.sudahKumpul).slice(0, 3)
+  const activeMaterials = allMateri.filter(m => m.status === 'active')
 
   return (
     <div className="space-y-6 animate-fadeIn">

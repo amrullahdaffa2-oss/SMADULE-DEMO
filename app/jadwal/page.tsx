@@ -1,13 +1,25 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { BookOpen, Clock, CheckCircle2, Lock, Calendar } from 'lucide-react'
 import { Countdown } from '@/components/dashboard/Countdown'
-import { MOCK_MATERI } from '@/lib/mock-data'
+import { getMateri } from '@/lib/supabase-service'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
+type Materi = {
+  id: string; judul: string; mapel: string
+  scheduleDate: Date; status: string
+}
+
 export default function JadwalPage() {
-  const sortedMaterials = [...MOCK_MATERI].sort((a, b) => 
+  const [materi, setMateri] = useState<Materi[]>([])
+
+  useEffect(() => {
+    getMateri().then(setMateri).catch(console.error)
+  }, [])
+
+  const sortedMaterials = [...materi].sort((a, b) => 
     new Date(a.scheduleDate).getTime() - new Date(b.scheduleDate).getTime()
   )
 

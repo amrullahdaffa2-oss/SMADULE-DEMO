@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { MOCK_ABSENSI, MOCK_MATERI, MOCK_MURID, ATTENDANCE_WEEKLY } from '@/lib/mock-data'
+import { getMateri, getMurid } from '@/lib/supabase-service'
+import { ATTENDANCE_WEEKLY } from '@/lib/mock-data'
 import { formatDate, formatDateTime, cn } from '@/lib/utils'
 import {
   CheckCircle, XCircle, Clock, Calendar, Users, TrendingUp,
@@ -14,6 +15,17 @@ export default function AbsensiPage() {
   const { role, absensi } = useAppStore()
   const [selectedMateri, setSelectedMateri] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [allMateri, setAllMateri] = useState<{
+    id: string; judul: string; status: string
+  }[]>([])
+  const [totalMurid, setTotalMurid] = useState(0)
+
+  useEffect(() => {
+    getMateri().then(setAllMateri).catch(console.error)
+    getMurid().then(list => setTotalMurid(list.length)).catch(console.error)
+  }, [])
+
+  const activeMateri = allMateri.filter(m => m.status === 'active' || m.status === 'closed')
 
   // For murid: filter to only their attendance (m1)
   const myAbsensi = role === 'murid'
@@ -21,7 +33,7 @@ export default function AbsensiPage() {
     : absensi
 
   // Stats calculation
-  const totalMateriAktif = MOCK_MATERI.filter(m => m.status === 'active' || m.status === 'closed').length
+  const totalMateriAktif = activeMateri.length
   const hadirCount = myAbsensi.length
   const kehadiranPersen = totalMateriAktif > 0 ? Math.round((hadirCount / totalMateriAktif) * 100) : 0
 
@@ -35,13 +47,13 @@ export default function AbsensiPage() {
     : filteredAbsensi
 
   // Group by materi for guru
-  const absensiByMateri = MOCK_MATERI.filter(m => m.status === 'active' || m.status === 'closed').map(materi => {
+  const absensiByMateri = activeMateri.map(materi => {
     const absensiMateri = absensi.filter(a => a.materiId === materi.id)
     return {
       ...materi,
       totalHadir: absensiMateri.length,
-      totalMurid: MOCK_MURID.length,
-      persenHadir: Math.round((absensiMateri.length / MOCK_MURID.length) * 100)
+      totalMurid: totalMurid || 1,
+      persenHadir: Math.round((absensiMateri.length / (totalMurid || 1)) * 100)
     }
   })
 
@@ -173,7 +185,7 @@ export default function AbsensiPage() {
             <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center mb-3">
               <Users size={20} className="text-white" />
             </div>
-            <p className="text-2xl font-bold text-slate-900 font-display">{MOCK_MURID.length}</p>
+            <p className="text-2xl font-bold text-slate-900 font-display">{totalMurid}</p>
             <p className="text-sm text-slate-500">Total Murid</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
@@ -188,7 +200,7 @@ export default function AbsensiPage() {
               <Calendar size={20} className="text-white" />
             </div>
             <p className="text-2xl font-bold text-slate-900 font-display">
-              {MOCK_MATERI.filter(m => m.status === 'active').length}
+              {activeMateri.filter(m => m.status === 'active').length}
             </p>
             <p className="text-sm text-slate-500">Materi Aktif</p>
           </div>
@@ -197,7 +209,7 @@ export default function AbsensiPage() {
               <TrendingUp size={20} className="text-white" />
             </div>
             <p className="text-2xl font-bold text-slate-900 font-display">
-              {Math.round((absensi.length / (MOCK_MURID.length * MOCK_MATERI.filter(m => m.status === 'active' || m.status === 'closed').length || 1)) * 100)}%
+              {Math.round((absensi.length / ((totalMurid || 1) * (activeMateri.length || 1))) * 100)}%
             </p>
             <p className="text-sm text-slate-500">Rata-rata Kehadiran</p>
           </div>
@@ -223,7 +235,7 @@ export default function AbsensiPage() {
             className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
             <option value="all">Semua Materi</option>
-            {MOCK_MATERI.filter(m => m.status === 'active' || m.status === 'closed').map(m => (
+            {activeMateri.map(m => (
               <option key={m.id} value={m.id}>{m.judul}</option>
             ))}
           </select>

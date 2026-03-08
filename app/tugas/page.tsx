@@ -1,14 +1,27 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Clock, AlertCircle, CheckCircle2, ClipboardList } from 'lucide-react'
-import { MOCK_TUGAS } from '@/lib/mock-data'
+import { getTugas } from '@/lib/supabase-service'
 import { cn } from '@/lib/utils'
 
+type Tugas = {
+  id: string; judul: string; materiId: string; deskripsi: string
+  deadline: Date; nilaiMaks: number; sudahKumpul: boolean
+  tipe: 'essay' | 'quiz' | 'proyek' | 'ulangan'
+}
+
 export default function TugasPage() {
+  const [tugas, setTugas] = useState<Tugas[]>([])
+
+  useEffect(() => {
+    getTugas().then(setTugas).catch(console.error)
+  }, [])
+
   // Categorize tasks
-  const needToDo = MOCK_TUGAS.filter(t => !t.sudahKumpul && new Date(t.deadline) > new Date())
-  const completed = MOCK_TUGAS.filter(t => t.sudahKumpul)
-  const overdue = MOCK_TUGAS.filter(t => !t.sudahKumpul && new Date(t.deadline) <= new Date())
+  const needToDo = tugas.filter(t => !t.sudahKumpul && new Date(t.deadline) > new Date())
+  const completed = tugas.filter(t => t.sudahKumpul)
+  const overdue = tugas.filter(t => !t.sudahKumpul && new Date(t.deadline) <= new Date())
 
   // Calculate stats
   const stats = [

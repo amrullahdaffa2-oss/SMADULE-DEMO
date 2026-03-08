@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { MOCK_MURID } from '@/lib/mock-data'
+import { getMurid } from '@/lib/supabase-service'
 import { cn } from '@/lib/utils'
 import {
   Trophy, Medal, Award, Star, Gift, Crown, Zap,
@@ -38,14 +38,21 @@ export default function LeaderboardPage() {
   const [period, setPeriod] = useState('minggu')
   const [redeemModal, setRedeemModal] = useState<typeof rewards[0] | null>(null)
   const [redeemedItems, setRedeemedItems] = useState<string[]>([])
+  const [allMurid, setAllMurid] = useState<{
+    id: string; nama: string; kelas: string; avatar: string; poin: number; ranking: number
+  }[]>([])
+
+  useEffect(() => {
+    getMurid().then(setAllMurid).catch(console.error)
+  }, [])
 
   // Sort students by poin
-  const sortedMurid = [...MOCK_MURID].sort((a, b) => b.poin - a.poin)
+  const sortedMurid = [...allMurid].sort((a, b) => b.poin - a.poin)
   const top3 = sortedMurid.slice(0, 3)
   const rest = sortedMurid.slice(3)
 
   // Current user
-  const currentUser = MOCK_MURID.find(m => m.id === 'm1')
+  const currentUser = allMurid.find(m => m.id === 'm1')
   const currentRank = sortedMurid.findIndex(m => m.id === 'm1') + 1
 
   const handleRedeem = (reward: typeof rewards[0]) => {
@@ -98,7 +105,7 @@ export default function LeaderboardPage() {
               <p className="text-indigo-200 text-sm font-medium">Posisi Kamu</p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-4xl font-bold font-display">#{currentRank}</span>
-                <span className="text-indigo-200">dari {MOCK_MURID.length} murid</span>
+                <span className="text-indigo-200">dari {allMurid.length} murid</span>
               </div>
             </div>
             <div className="text-right">

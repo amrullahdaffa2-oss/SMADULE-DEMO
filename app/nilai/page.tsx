@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { MOCK_NILAI, MOCK_MURID, MOCK_MATERI, GRADE_DATA_MURID } from '@/lib/mock-data'
+import { getNilaiByMurid, getAllNilai, getMateri } from '@/lib/supabase-service'
+import { GRADE_DATA_MURID } from '@/lib/mock-data'
 import { formatDate, nilaiToHuruf, cn } from '@/lib/utils'
 import {
   BarChart2, TrendingUp, Award, BookOpen, Search, Download,
@@ -27,9 +28,22 @@ export default function NilaiPage() {
   const [search, setSearch] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState<number>(0)
+  const [myNilai, setMyNilai] = useState<{
+    id: string; muridId: string; muridNama: string; materiId: string
+    tipe: string; nilaiAngka: number; nilaiHuruf: string; feedback: string; dinilaiPada: Date
+  }[]>([])
+  const [allNilai, setAllNilai] = useState<typeof myNilai>([])
+  const [materiMap, setMateriMap] = useState<Record<string, string>>({})
 
-  // For murid: filter to only their grades (m1)
-  const myNilai = MOCK_NILAI.filter(n => n.muridId === 'm1')
+  useEffect(() => {
+    getNilaiByMurid('m1').then(setMyNilai).catch(console.error)
+    getAllNilai().then(setAllNilai).catch(console.error)
+    getMateri().then(list => {
+      const map: Record<string, string> = {}
+      list.forEach(m => { map[m.id] = m.judul })
+      setMateriMap(map)
+    }).catch(console.error)
+  }, [])
 
   // Calculate stats for murid
   const avgNilai = myNilai.length > 0
@@ -40,8 +54,8 @@ export default function NilaiPage() {
 
   // Filter for guru view
   const filteredNilai = search
-    ? MOCK_NILAI.filter(n => n.muridNama.toLowerCase().includes(search.toLowerCase()))
-    : MOCK_NILAI
+    ? allNilai.filter(n => n.muridNama.toLowerCase().includes(search.toLowerCase()))
+    : allNilai
 
   const handleEdit = (id: string, currentValue: number) => {
     setEditingId(id)
@@ -139,12 +153,12 @@ export default function NilaiPage() {
           </div>
           <div className="divide-y divide-slate-100">
             {myNilai.length > 0 ? myNilai.map((nilai) => {
-              const materi = MOCK_MATERI.find(m => m.id === nilai.materiId)
+              const materiJudul = materiMap[nilai.materiId] || 'Materi'
               return (
                 <div key={nilai.id} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">{materi?.judul || 'Materi'}</p>
+                      <p className="font-medium text-slate-900">{materiJudul}</p>
                       <p className="text-sm text-slate-500 mt-0.5">
                         {nilai.tipe.charAt(0).toUpperCase() + nilai.tipe.slice(1)} - {formatDate(nilai.dinilaiPada)}
                       </p>
@@ -154,15 +168,13 @@ export default function NilaiPage() {
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
-                      <div className={cn(
-                        'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                        nilai.nilaiAngka >= 85 ? 'bg-emerald-100 text-emerald-700' :
-                        nilai.nilaiAngka >= 70 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
-                      )}>
-                        <span className="text-lg font-bold">{nilai.nilaiAngka}</span>
-                        <span className="text-sm font-medium">({nilai.nilaiHuruf})</span>
-                      </div>
+                    <div className={cn(
+                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg',
+                      nilai.nilaiAngka >= 85 ? 'bg-emerald-100 text-emerald-700' :
+                      nilai.nilaiAngka >= 70 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'
+                    )}>
+                      <span className="text-lg font-bold">{nilai.nilaiAngka}</span>
+                      <span className="text-sm font-medium">({nilai.nilaiHuruf})</span>
                     </div>
                   </div>
                 </div>
@@ -298,7 +310,7 @@ export default function NilaiPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {filteredNilai.map((nilai) => {
-                  const materi = MOCK_MATERI.find(m => m.id === nilai.materiId)
+                  const materiJudul = materiMap[nilai.materiId] || '-'
                   const isEditing = editingId === nilai.id
                   return (
                     <tr key={nilai.id} className="hover:bg-slate-50">
@@ -310,7 +322,7 @@ export default function NilaiPage() {
                           <span className="font-medium text-slate-900">{nilai.muridNama}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-sm text-slate-600">{materi?.judul || '-'}</td>
+                      <td className="px-5 py-4 text-sm text-slate-600">{materiJudul}</td>
                       <td className="px-5 py-4">
                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                           {nilai.tipe}
@@ -386,12 +398,12 @@ export default function NilaiPage() {
           </div>
           <div className="divide-y divide-slate-100">
             {myNilai.map((nilai) => {
-              const materi = MOCK_MATERI.find(m => m.id === nilai.materiId)
+              const materiJudul = materiMap[nilai.materiId] || 'Materi'
               return (
                 <div key={nilai.id} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900">{materi?.judul || 'Materi'}</p>
+                      <p className="font-medium text-slate-900">{materiJudul}</p>
                       <p className="text-sm text-slate-500 mt-0.5">
                         {nilai.tipe.charAt(0).toUpperCase() + nilai.tipe.slice(1)} - {formatDate(nilai.dinilaiPada)}
                       </p>

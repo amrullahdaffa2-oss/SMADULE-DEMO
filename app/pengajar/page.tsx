@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
-import { MOCK_PENGAJAR } from '@/lib/mock-data'
+import { getPengajar } from '@/lib/supabase-service'
 import { cn } from '@/lib/utils'
 import {
   Users, Search, MessageCircle, Phone, Mail, X, Send,
@@ -22,10 +22,19 @@ export default function PengajarPage() {
   const [chatOpen, setChatOpen] = useState<string | null>(null)
   const [messages, setMessages] = useState<Record<string, { text: string; from: 'user' | 'guru'; time: Date }[]>>({})
   const [inputMessage, setInputMessage] = useState('')
+  const [allPengajar, setAllPengajar] = useState<{
+    id: string; nama: string; mapel: string; kelas: string[]
+    wa: string; email: string; avatar: string; status: string
+    spesialisasi: string; color: string
+  }[]>([])
 
-  const mapelList = [...new Set(MOCK_PENGAJAR.map(p => p.mapel))]
+  useEffect(() => {
+    getPengajar().then(setAllPengajar).catch(console.error)
+  }, [])
 
-  const filteredPengajar = MOCK_PENGAJAR.filter(p => {
+  const mapelList = [...new Set(allPengajar.map(p => p.mapel))]
+
+  const filteredPengajar = allPengajar.filter(p => {
     const matchSearch = p.nama.toLowerCase().includes(search.toLowerCase()) ||
       p.mapel.toLowerCase().includes(search.toLowerCase())
     const matchMapel = filterMapel === 'all' || p.mapel === filterMapel
@@ -47,7 +56,7 @@ export default function PengajarPage() {
 
     // Simulate auto-reply after 1 second
     setTimeout(() => {
-      const guru = MOCK_PENGAJAR.find(g => g.id === guruId)
+      const guru = allPengajar.find(g => g.id === guruId)
       setMessages(prev => ({
         ...prev,
         [guruId]: [
@@ -62,7 +71,7 @@ export default function PengajarPage() {
     }, 1000)
   }
 
-  const selectedGuru = MOCK_PENGAJAR.find(g => g.id === chatOpen)
+  const selectedGuru = allPengajar.find(g => g.id === chatOpen)
 
   return (
     <div className="space-y-6">
@@ -104,7 +113,7 @@ export default function PengajarPage() {
           <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center mb-3">
             <Users size={20} className="text-white" />
           </div>
-          <p className="text-2xl font-bold text-slate-900 font-display">{MOCK_PENGAJAR.length}</p>
+          <p className="text-2xl font-bold text-slate-900 font-display">{allPengajar.length}</p>
           <p className="text-sm text-slate-500">Total Pengajar</p>
         </div>
         <div className="bg-white rounded-xl p-4 border border-slate-200">
@@ -112,7 +121,7 @@ export default function PengajarPage() {
             <Circle size={20} className="text-white fill-white" />
           </div>
           <p className="text-2xl font-bold text-slate-900 font-display">
-            {MOCK_PENGAJAR.filter(p => p.status === 'online').length}
+            {allPengajar.filter(p => p.status === 'online').length}
           </p>
           <p className="text-sm text-slate-500">Online Sekarang</p>
         </div>
@@ -121,7 +130,7 @@ export default function PengajarPage() {
             <GraduationCap size={20} className="text-white" />
           </div>
           <p className="text-2xl font-bold text-slate-900 font-display">
-            {MOCK_PENGAJAR.filter(p => p.status === 'mengajar').length}
+            {allPengajar.filter(p => p.status === 'mengajar').length}
           </p>
           <p className="text-sm text-slate-500">Sedang Mengajar</p>
         </div>

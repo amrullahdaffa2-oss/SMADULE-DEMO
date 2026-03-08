@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAppStore } from '@/lib/store'
-import { MOCK_USERS } from '@/lib/mock-data'
 import { cn } from '@/lib/utils'
 import {
   LayoutDashboard, BookOpen, Calendar, ClipboardList,
@@ -46,20 +45,24 @@ const navItems = {
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { role, sidebarOpen, setSidebarOpen } = useAppStore()
-  const user = MOCK_USERS[role]
+  const { role, sidebarOpen, setSidebarOpen, authUser } = useAppStore()
   const items = navItems[role]
+  const initial = authUser?.name
+    ? authUser.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    : '??'
+  const subtitle = role === 'guru' ? 'Tenaga Pengajar' : role === 'murid' ? authUser?.email ?? 'Pelajar' : 'Orang Tua'
 
   return (
     <>
       {sidebarOpen && (
         <div className="fixed inset-0 z-20 bg-black/40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
-      <aside className={cn(
-        'fixed lg:relative left-0 top-0 h-full z-30 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 shadow-sm',
-        sidebarOpen ? 'w-64' : 'w-16',
-        'hidden lg:flex'
-      )}>
+      <aside
+        className={cn(
+          'fixed lg:relative left-0 top-0 h-full z-30 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 shadow-sm',
+          sidebarOpen ? 'flex lg:flex w-64' : 'hidden lg:flex w-16',
+        )}
+      >
         <div className="flex items-center px-4 h-16 border-b border-slate-100">
           <Link
             href="/"
@@ -81,13 +84,11 @@ export function Sidebar() {
           <div className="mx-3 my-3 p-3 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
-                {user.avatar}
+                {initial}
               </div>
               <div className="min-w-0">
-                <p className="font-semibold text-sm text-slate-800 truncate">{user.nama}</p>
-                <p className="text-xs text-slate-500 truncate">
-                  {'mapel' in user ? user.mapel : 'kelas' in user ? user.kelas : 'Orang Tua'}
-                </p>
+                <p className="font-semibold text-sm text-slate-800 truncate">{authUser?.name ?? 'Pengguna'}</p>
+                <p className="text-xs text-slate-500 truncate">{subtitle}</p>
               </div>
             </div>
           </div>

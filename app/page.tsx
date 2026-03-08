@@ -66,10 +66,10 @@ export default function LandingPage() {
 
           {/* CTA Button */}
           <Link
-            href="/dashboard"
+            href="/login"
             className="px-5 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
           >
-            Coba Demo
+            Masuk
           </Link>
         </div>
       </nav>
@@ -99,10 +99,10 @@ export default function LandingPage() {
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <Link
-                  href="/dashboard"
+                  href="/login"
                   className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition flex items-center justify-center gap-2"
                 >
-                  Mulai Demo <ArrowRight className="w-4 h-4" />
+                  Mulai Sekarang <ArrowRight className="w-4 h-4" />
                 </Link>
                 <button className="px-6 py-3 border-2 border-slate-300 text-slate-700 font-medium rounded-lg hover:border-slate-400 hover:bg-slate-50 transition">
                   Lihat Fitur
